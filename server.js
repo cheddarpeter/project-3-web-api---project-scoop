@@ -40,18 +40,23 @@ const routes = {
 // create a method called POST on routes/Comments
 // that will post a comment
 function createComment(url, request) {
-  const id = Number(url.split('/').filter(segment => segment)[1]);
-  let targetArticle = database.articles[id];
-  const requestComment = request.body;
-  const username = url.split('/').filter(segment => segment)[1];
-  const user = database.users.username;
+
+  const requestComment = request.body.comment;
+  const requestUsername = request.body.username;
+  const requestArticleID = request.body.articleId;
+  const user = database.users[requestUsername];
+  const targetArticle = database.articles[requestArticleID];
   const response = {};
 
-  console.log(`>>>>>> requestComment = ${requestComment}`)
-  console.log(`>>>>>> user = ${user}`)
-  console.log(`>>>>>> targetArticle = ${targetArticle}`)
+  console.log(`>>>>>> requestUsername = ${requestUsername}`);
+  console.log(`>>>>>> requestArticleID = ${requestArticleID}`);
+  console.log(`>>>>>> requestComment = ${requestComment}`);
+  console.log(`>>>>>> user = ${user}`);
+  console.log(`>>>>>> targetArticle = ${targetArticle}`);
 
-  if (targetArticle && user && requestComment) {
+  if (requestComment && requestUsername && requestArticleID
+  && user && targetArticle) {
+    console.log('>>>>>> conditions met!');
     const comment = {
       id: database.nextCommentId++,
       body: requestComment,
@@ -66,7 +71,10 @@ function createComment(url, request) {
 
     response.body = {comment: comment};
     reponse.status = 201;
+
   } else {
+
+    console.log('>>>>>> conditions not met!');
     response.status = 400;
   }
 
