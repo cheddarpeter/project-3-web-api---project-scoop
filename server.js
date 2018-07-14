@@ -158,13 +158,13 @@ function deleteComment(url, request) {
   const response = {};
 
   if (savedComment && commentedArticle && userCommentIds) {
-// DELETE CommentID from Article object (Comment IDs array)
+// DELETE commentID from article commentIds array
     articleCommentIds.splice(articleCommentIds.indexOf(id), 1);
 
-// DELETE Comment from User's commentIds object Array
+// DELETE commentID from user commentIds array
     userCommentIds.splice(userCommentIds.indexOf(id), 1);
 
-// DELETE CommentID from User object (CommentIDs array)
+// DELETE comment from database
     database.comments[id] = null;
 
 // Add a 204 response status code to response array -- indicate success
