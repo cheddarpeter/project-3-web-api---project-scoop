@@ -32,52 +32,149 @@ const routes = {
   '/comments': {
     'POST': createComment
   },
-  '/comments/:id': {},
-  '/comments/:id/upvote': {},
-  '/comments/:id/downvote': {},
+  '/comments/:id': {
+    'PUT': updateComment,
+    'DELETE': deleteComment
+  },
+  '/comments/:id/upvote': {
+    'PUT': upvoteComment
+  },
+  '/comments/:id/downvote': {
+    'PUT': downvoteComment
+  },
 };
 
-// create a method called POST on routes/Comments
-// that will post a comment
+// create a function that creates a comment when POST is called
 function createComment(url, request) {
 
-  const requestComment = request.body.comment;
-  const requestUsername = request.body.username;
-  const requestArticleID = request.body.articleId;
-  const user = database.users[requestUsername];
-  const targetArticle = database.articles[requestArticleID];
+  const requestComment = request.body.comment.body;
+  const requestUsername = request.body.comment.username;
+  const requestArticleID = request.body.comment.articleId;
   const response = {};
 
-  console.log(`>>>>>> requestUsername = ${requestUsername}`);
-  console.log(`>>>>>> requestArticleID = ${requestArticleID}`);
-  console.log(`>>>>>> requestComment = ${requestComment}`);
-  console.log(`>>>>>> user = ${user}`);
-  console.log(`>>>>>> targetArticle = ${targetArticle}`);
+  if (requestComment
+    && requestUsername
+    && requestArticleID
+    && database.users[requestUsername]
+    && database.articles[requestArticleID]) {
 
-  if (requestComment && requestUsername && requestArticleID
-  && user && targetArticle) {
     console.log('>>>>>> conditions met!');
+
     const comment = {
       id: database.nextCommentId++,
       body: requestComment,
-      username: user,
-      articleId: targetArticle,
+      username: requestUsername,
+      articleId: requestArticleID,
       upvotedBy: [],
-      downvotedBy: [],
+      downvotedBy: []
     };
 
     database.comments[comment.id] = comment;
     database.users[comment.username].commentIds.push(comment.id);
+    database.articles[comment.articleId].commentIds.push(comment.id);
 
     response.body = {comment: comment};
-    reponse.status = 201;
+    response.status = 201;
 
   } else {
 
-    console.log('>>>>>> conditions not met!');
+    console.log('conditions not met!');
+    response.status = 400;
+
+  }
+
+  console.log(response.status);
+  console.log(response.body);
+  return response;
+
+};
+
+function updateComment(url, request) {
+  // /comments/:id PUT
+  const id = Number(url.split('/').filter(segment => segment)[1]);
+  const savedComment = database.comments[id];
+  const requestComment = request.body.comment;
+  const response = {};
+
+  if (!id || !requestComment) {
+    response.status = 400;
+  } else if (!savedComment) {
+    response.status = 404;
+  } else {
+    savedComment.body = requestComment.body || savedComment.body;
+
+    response.body = {article: savedComment};
+    response.status = 200;
+  }
+  console.log(response.status);
+  return response;
+};
+
+function upvoteComment(url, request) {
+  const id = Number(url.split('/').filter(segment => segment)[1]);
+  const savedComment = database.comments[id];
+  const username = request.body.username;
+  const response = {};
+
+  if (savedComment && database.users[username]) {
+    upvote(savedComment, username);
+
+    response.body = {comment: savedComment};
+    response.status = 200;
+  } else {
     response.status = 400;
   }
 
+  return response;
+};
+
+function downvoteComment(url, request) {
+  const id = Number(url.split('/').filter(segment => segment)[1]);
+  const savedComment = database.comments[id];
+  const username = request.body.username;
+  const response = {};
+
+  if (savedComment && database.users[username]) {
+    downvote(savedComment, username);
+
+    response.body = {comment: savedComment};
+    response.status = 200;
+  } else {
+    response.status = 400;
+  }
+
+  return response;
+};
+
+function deleteComment(url, request) {
+// /coments/:id DELETE
+// define variables to parse request
+  const id = Number(url.split('/').filter(segment => segment)[1]);
+  const savedComment = database.comments[id];
+  const requestArticleID = savedComment.articleId;
+  const commentedArticle = database.articles[requestArticleID];
+  const userCommentIds = database.users[savedComment.username].commentIds;
+  const articleCommentIds = commentedArticle.commentIds;
+  const response = {};
+
+  if (savedComment && commentedArticle && userCommentIds) {
+// DELETE CommentID from Article object (Comment IDs array)
+    articleCommentIds.splice(articleCommentIds.indexOf(id), 1);
+
+// DELETE Comment from User's commentIds object Array
+    userCommentIds.splice(userCommentIds.indexOf(id), 1);
+
+// DELETE CommentID from User object (CommentIDs array)
+    database.comments[id] = null;
+
+// Add a 204 response status code to response array -- indicate success
+    response.status = 204;
+    console.log(`>>>>> conditions met: ${response.status}`)
+  } else {
+    response.status = 404;
+    console.log(`>>>>> conditions not met: ${response.status}`)
+    return response;
+  }
   return response;
 };
 
